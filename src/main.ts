@@ -14,7 +14,7 @@ console.log(width, height);
 
 const rowLength = 20;
 const gap = 30;
-const num = 1000;
+const num = 1;
 for (let i = 0; i < num; i++) {
 	balls.push({
 		x: width / 4 + (i % (rowLength / 2)) * gap,
@@ -29,11 +29,8 @@ function drawBall(ball: IBall) {
 	ctx.fill();
 }
 
-for (const ball of balls) {
-	drawBall(ball);
-}
-
 function loop() {
+	ctx.clearRect(0, 0, width, height);
 	const mousePos = { x: 0, y: 0 };
 
 	document.onmousemove = (e: MouseEvent) => {
@@ -42,21 +39,24 @@ function loop() {
 	};
 
 	for (const ball of balls) {
-		const dx = ball.x - mousePos.x;
-		const dy = ball.y - mousePos.y;
-		const distance = Math.sqrt(dx * dx + dy * dy);
-		const minDistance = 500000;
-		if (distance < minDistance) {
-			console.log("distance", distance);
-			const angle = Math.atan2(dy, dx);
-			const targetX = mousePos.x + Math.cos(angle) * distance;
-			const targetY = mousePos.y + Math.sin(angle) * distance;
-			ball.x += targetX;
-			ball.y += targetY;
-		}
+		const MAX_SPEED = 0.1;
+		const MIN_SPEED = 0.1; // Very slow if close but not frozen.
+		const ATTRACTION = 0.5;
+		const diff_x = mousePos.x - ball.x;
+		const diff_y = mousePos.y - ball.y;
+		// const distance = Math.sqrt(diff_x * diff_x + diff_y * diff_y);
+		// let speed = distance * ATTRACTION;
+		// if (speed > MAX_SPEED) speed = MAX_SPEED;
+		// if (speed < MIN_SPEED) speed = MIN_SPEED;
+		ball.x += diff_x * 0.02;
+		// The rates along axes are proportional to speed;
+		// we use ratios instead of sine / cosine.
+		// ball.x += (diff_x / distance) * speed;
+		// ball.y += (diff_y / distance) * speed;
+
 		drawBall(ball);
 	}
 	window.requestAnimationFrame(loop);
 }
 
-window.requestAnimationFrame(loop);
+setInterval(loop, 1000 / 60);
