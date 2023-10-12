@@ -8,19 +8,24 @@ interface IBall {
 	x: number;
 	y: number;
 	radius: number;
+	originalPos: { x: number; y: number };
 }
 
 console.log(width, height);
 
-const rowLength = 20;
+const num = 400;
+const rowLength = Math.round(Math.sqrt(num));
 const gap = 30;
-const num = 1;
 for (let i = 0; i < num; i++) {
+	const gridX = width / 4 + (i % rowLength) * gap;
+	const gridY = height / 8 + Math.floor(i / rowLength) * gap;
 	balls.push({
-		x: width / 4 + (i % (rowLength / 2)) * gap,
-		y: height / 8 + Math.floor(i / rowLength) * gap,
+		x: gridX,
+		y: gridY,
 		radius: 5,
+		originalPos: { x: gridX, y: gridY },
 	});
+	drawBall(balls[i]);
 }
 
 function drawBall(ball: IBall) {
@@ -29,34 +34,84 @@ function drawBall(ball: IBall) {
 	ctx.fill();
 }
 
+const mousePos = { x: 0, y: 0 };
+document.onmousemove = (e: MouseEvent) => {
+	mousePos.x = e.clientX;
+	mousePos.y = e.clientY;
+};
+
+document.onclick = () => {
+	for (const ball of balls) {
+		randomisePosition(ball);
+	}
+};
+
+let i = 0;
 function loop() {
 	ctx.clearRect(0, 0, width, height);
-	const mousePos = { x: 0, y: 0 };
-
-	document.onmousemove = (e: MouseEvent) => {
-		mousePos.x = e.clientX;
-		mousePos.y = e.clientY;
-	};
 
 	for (const ball of balls) {
-		const MAX_SPEED = 0.1;
-		const MIN_SPEED = 0.1; // Very slow if close but not frozen.
-		const ATTRACTION = 0.5;
-		const diff_x = mousePos.x - ball.x;
-		const diff_y = mousePos.y - ball.y;
-		// const distance = Math.sqrt(diff_x * diff_x + diff_y * diff_y);
-		// let speed = distance * ATTRACTION;
-		// if (speed > MAX_SPEED) speed = MAX_SPEED;
-		// if (speed < MIN_SPEED) speed = MIN_SPEED;
-		ball.x += diff_x * 0.02;
-		// The rates along axes are proportional to speed;
-		// we use ratios instead of sine / cosine.
-		// ball.x += (diff_x / distance) * speed;
-		// ball.y += (diff_y / distance) * speed;
+		const target = ball.originalPos;
+		const mouseDirection = {
+			x: mousePos.x - ball.x,
+			y: mousePos.y - ball.y,
+		};
+		const targetDirection = {
+			x: target.x - ball.x,
+			y: target.y - ball.y,
+		};
+
+		console.log(ball);
+
+		const mouseDistance = Math.max(
+			Math.sqrt(mouseDirection.x * mouseDirection.x + mouseDirection.y * mouseDirection.y),
+			0.01
+		);
+
+		console.log(mouseDistance);
+
+		let targetDistance = Math.sqrt(targetDirection.x * targetDirection.x + targetDirection.y * targetDirection.y);
+
+		console.log(targetDistance);
+
+		console.log(mouseDistance);
+
+		const targetForce = {
+			x: targetDirection.x,
+			y: targetDirection.y,
+		};
+		console.log(targetForce);
+
+		const mouseForce = {
+			x: -mouseDirection.x * (1 / (mouseDistance * mouseDistance)) * 10000,
+			y: -mouseDirection.y * (1 / (mouseDistance * mouseDistance)) * 10000,
+		};
+
+		console.log(mouseForce);
+
+		const force = {
+			x: targetForce.x + mouseForce.x,
+			y: targetForce.y + mouseForce.y,
+		};
+
+		console.log(force);
+
+		ball.x += force.x / 1;
+		ball.y += force.y / 1;
+
+		ball.x = Math.max(ball.radius, Math.min(width - ball.radius, ball.x));
+		ball.y = Math.max(ball.radius, Math.min(height - ball.radius, ball.y));
+		if (ball.x < ball.radius) ball.x = ball.radius;
+		if (ball.y < ball.radius) ball.y = ball.radius;
 
 		drawBall(ball);
+		i += 0.01;
 	}
-	window.requestAnimationFrame(loop);
+}
+
+function randomisePosition(ball: IBall) {
+	ball.x = Math.random() * width;
+	ball.y = Math.random() * height;
 }
 
 setInterval(loop, 1000 / 60);
